@@ -1,0 +1,26 @@
+{
+  "entities": {
+    "LiveStat": {
+      "title": "Live Match Statistic",
+      "description": "Records of matches played, including score and league info for historical analysis.",
+      "type": "object",
+      "properties": {
+        "home": { "type": "string" },
+        "away": { "type": "string" },
+        "score": { "type": "string" },
+        "status": { "type": "string" },
+        "minute": { "type": "string" },
+        "league": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["home", "away", "score", "status", "league", "date", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/live_stats/{statId}": {
+      "schema": "LiveStat",
+      "description": "Historical reservoir of match statistics."
+    }
+  }
+}

@@ -1,4 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { collection, addDoc, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import { db } from "../lib/firebase";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -213,4 +215,121 @@ export async function chatAboutMatch(message: string, context: PredictionResult 
   });
 
   return response.text || "I'm sorry, I couldn't process that.";
+}
+
+export interface LeagueInfo {
+  name: string;
+  country: string;
+  topTeams: string[];
+  recentDynamic: string;
+}
+
+export async function getGlobalLeagues(): Promise<LeagueInfo[]> {
+  const prompt = "Provide a summary of the top 5 global football leagues (Premier League, La Liga, Bundesliga, Serie A, Ligue 1). For each league, include the common name, country, top 3 teams currently, and a brief description of the current league dynamic. Return as structured JSON.";
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3.1-flash-lite-preview",
+    contents: [{ parts: [{ text: prompt }] }],
+    config: {
+      tools: [{ googleSearch: {} }],
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            name: { type: Type.STRING },
+            country: { type: Type.STRING },
+            topTeams: { type: Type.ARRAY, items: { type: Type.STRING } },
+            recentDynamic: { type: Type.STRING }
+          },
+          required: ["name", "country", "topTeams", "recentDynamic"]
+        }
+      }
+    }
+  });
+
+  return JSON.parse(response.text);
+}
+
+export interface LiveMatch {
+  home: string;
+  away: string;
+  score: string;
+  status: string;
+  minute?: string;
+  league: string;
+}
+
+export async function getLiveStats(): Promise<LiveMatch[]> {
+  const today = new Date().toISOString().split('T')[0];
+  const prompt = `Find 10-15 significant live or recently concluded football match scores specifically for TODAY (${today}) from major global leagues. Return as a JSON array of objects with home team, away team, score, match status (e.g., Live, Finished), minute if live, and league name.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3.1-flash-lite-preview",
+    contents: [{ parts: [{ text: prompt }] }],
+    config: {
+      tools: [{ googleSearch: {} }],
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            home: { type: Type.STRING },
+            away: { type: Type.STRING },
+            score: { type: Type.STRING },
+            status: { type: Type.STRING },
+            minute: { type: Type.STRING },
+            league: { type: Type.STRING }
+          },
+          required: ["home", "away", "score", "status", "league"]
+        }
+      }
+    }
+  });
+
+  const matches: LiveMatch[] = JSON.parse(response.text);
+  
+  // Save to Reservoir (Firestore)
+  try {
+    const batch = matches.slice(0, 10); // Limit batch size for safety
+    for (const match of batch) {
+      // Avoid duplicates for today
+      const q = query(
+        collection(db, "live_stats"), 
+        where("home", "==", match.home),
+        where("away", "==", match.away),
+        where("date", "==", today)
+      );
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        await addDoc(collection(db, "live_stats"), {
+          ...match,
+          date: today,
+          timestamp: Date.now()
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Reservoir sync failed:", err);
+  }
+
+  return matches;
+}
+
+export async function getReservoirStats(): Promise<LiveMatch[]> {
+  try {
+    const q = query(
+      collection(db, "live_stats"), 
+      orderBy("timestamp", "desc"), 
+      limit(20)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data() as LiveMatch);
+  } catch (err) {
+    console.error("Failed to fetch from reservoir:", err);
+    return [];
+  }
 }

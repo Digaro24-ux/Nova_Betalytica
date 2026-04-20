@@ -1,0 +1,17 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Live Stats Reservoir
+    match /live_stats/{statId} {
+      allow read: if true; // Public can see historical stats
+      allow create: if true; // In this specific no-login app, we allow the engine to save stats
+      // We don't allow updates or deletes to the reservoir to keep history pure
+    }
+  }
+}

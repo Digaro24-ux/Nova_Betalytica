@@ -15,9 +15,21 @@ import {
   Trophy,
   PieChart as PieIcon,
   Mic,
-  Volume2
+  Volume2,
+  Globe,
+  Zap,
+  X
 } from 'lucide-react';
-import { getFootballPrediction, PredictionResult, chatAboutMatch } from './services/gemini';
+import { 
+  getFootballPrediction, 
+  PredictionResult, 
+  chatAboutMatch, 
+  getGlobalLeagues, 
+  getLiveStats,
+  getReservoirStats,
+  LeagueInfo,
+  LiveMatch
+} from './services/gemini';
 import { 
   BarChart, 
   Bar, 
@@ -181,6 +193,47 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PredictionResult | null>(null);
 
+  // New states for Global Leagues and Live Stats
+  const [isLeaguesOpen, setIsLeaguesOpen] = useState(false);
+  const [leagues, setLeagues] = useState<LeagueInfo[]>([]);
+  const [loadingLeagues, setLoadingLeagues] = useState(false);
+
+  const [isLiveOpen, setIsLiveOpen] = useState(false);
+  const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([]);
+  const [reservoirMatches, setReservoirMatches] = useState<LiveMatch[]>([]);
+  const [loadingLive, setLoadingLive] = useState(false);
+
+  const handleLeaguesClick = async () => {
+    setIsLeaguesOpen(true);
+    if (leagues.length > 0) return;
+    setLoadingLeagues(true);
+    try {
+      const data = await getGlobalLeagues();
+      setLeagues(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingLeagues(false);
+    }
+  };
+
+  const handleLiveClick = async () => {
+    setIsLiveOpen(true);
+    setLoadingLive(true);
+    try {
+      const [live, reservoir] = await Promise.all([
+        getLiveStats(),
+        getReservoirStats()
+      ]);
+      setLiveMatches(live);
+      setReservoirMatches(reservoir);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingLive(false);
+    }
+  };
+
   const handlePredict = async () => {
     if (!homeTeam || !awayTeam) {
       setError('Please enter both Home and Away teams.');
@@ -219,20 +272,29 @@ export default function App() {
   return (
     <div className="min-h-screen sophisticated-gradient text-[#E5E5E5] font-sans selection:bg-gold/30">
       {/* Header */}
-      <header className="border-b border-border-subtle bg-black/40 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-8 h-8 bg-gold rounded-sm rotate-45 flex items-center justify-center">
-              <div className="w-4 h-4 bg-black -rotate-45"></div>
+      <header className="border-b border-border-subtle bg-black/60 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-8 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-5">
+            <div className="w-10 h-10 bg-gold rounded-sm rotate-45 flex items-center justify-center shadow-[0_0_20px_rgba(197,160,89,0.3)]">
+              <div className="w-5 h-5 bg-black -rotate-45 flex items-center justify-center font-bold text-[8px]">NB</div>
             </div>
             <div>
-              <h1 className="font-serif text-xl tracking-[0.2em] font-light text-white">ORACLE <span className="text-gold italic">PRIME</span></h1>
+              <h1 className="font-serif text-2xl tracking-[0.05em] font-bold nova-3d-text">Nova <span className="text-gold italic">Betalytica</span></h1>
             </div>
           </div>
-          <div className="flex items-center gap-8 text-[10px] uppercase tracking-[0.15em] font-medium font-mono text-slate-500">
-            <span className="text-gold border-b border-gold pb-1">Football Analysis</span>
-            <span className="hover:text-white transition-colors cursor-pointer">Global Leagues</span>
-            <span className="hover:text-white transition-colors cursor-pointer">Live Stats</span>
+          <div className="flex items-center gap-10 text-[10px] uppercase tracking-[0.2em] font-bold font-mono">
+            <button 
+              onClick={handleLeaguesClick}
+              className="text-slate-400 hover:text-white transition-all flex items-center gap-2"
+            >
+              <Globe size={12} /> Global Leagues
+            </button>
+            <button 
+              onClick={handleLiveClick}
+              className="text-slate-400 hover:text-white transition-all flex items-center gap-2"
+            >
+              <Zap size={12} /> Live Stats
+            </button>
           </div>
         </div>
       </header>
@@ -506,6 +568,165 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* Global Leagues Modal */}
+      <AnimatePresence>
+        {isLeaguesOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-card-bg border border-white/10 w-full max-w-4xl max-h-[80vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl"
+            >
+              <div className="p-6 border-b border-white/5 flex items-center justify-between bg-military-blue/20">
+                <div className="flex items-center gap-3">
+                  <Globe className="text-gold" size={18} />
+                  <h3 className="text-sm uppercase tracking-[0.3em] font-bold">Global League Intelligence</h3>
+                </div>
+                <button onClick={() => setIsLeaguesOpen(false)} className="text-slate-500 hover:text-white transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-8 bg-surface-dark/50">
+                {loadingLeagues ? (
+                  <div className="h-64 flex flex-col items-center justify-center gap-4">
+                    <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+                    <p className="text-[10px] uppercase tracking-widest text-slate-500">Retrieving League Dynamics...</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {leagues.map((league, i) => (
+                      <div key={i} className="bg-white/5 border border-white/5 p-6 rounded-xl hover:border-gold/30 transition-all group">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-8 h-8 bg-military-blue rounded-lg flex items-center justify-center text-[10px] font-bold text-gold">
+                            {league.country.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-serif italic text-white group-hover:text-gold transition-colors">{league.name}</h4>
+                            <p className="text-[9px] uppercase tracking-widest text-slate-500">{league.country}</p>
+                          </div>
+                        </div>
+                        <div className="mb-4">
+                          <p className="text-[11px] text-slate-400 italic leading-relaxed">"{league.recentDynamic}"</p>
+                        </div>
+                        <div>
+                          <div className="text-[8px] uppercase tracking-widest font-bold text-gold/60 mb-2">Pace Setters</div>
+                          <div className="flex flex-wrap gap-2">
+                            {league.topTeams.map((team, idx) => (
+                              <span key={idx} className="px-2 py-1 bg-black/40 border border-white/5 rounded text-[9px] text-slate-300">{team}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Live Stats Modal */}
+      <AnimatePresence>
+        {isLiveOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              className="bg-card-bg border border-white/10 w-full max-w-2xl max-h-[80vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl"
+            >
+              <div className="p-6 border-b border-white/5 flex items-center justify-between bg-gold/5">
+                <div className="flex items-center gap-3">
+                  <Zap className="text-gold animate-pulse" size={18} />
+                  <h3 className="text-sm uppercase tracking-[0.3em] font-bold">Global Flux & Reservoir</h3>
+                </div>
+                <button onClick={() => setIsLiveOpen(false)} className="text-slate-500 hover:text-white transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                {loadingLive ? (
+                  <div className="h-64 flex flex-col items-center justify-center gap-4">
+                    <div className="flex gap-2">
+                       <div className="w-2 h-2 bg-gold rounded-full animate-bounce [animation-delay:-0.3s]" />
+                       <div className="w-2 h-2 bg-gold rounded-full animate-bounce [animation-delay:-0.15s]" />
+                       <div className="w-2 h-2 bg-gold rounded-full animate-bounce" />
+                    </div>
+                    <p className="text-[10px] uppercase tracking-widest text-slate-500 italic">Syncing with Live Streams...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <h4 className="text-[10px] uppercase tracking-widest text-gold font-bold mb-4 flex items-center gap-2">
+                        <span className="w-1 h-3 bg-gold"></span> Today's Global Schedule
+                      </h4>
+                      <div className="grid gap-3">
+                        {liveMatches.length > 0 ? liveMatches.map((match, i) => (
+                          <div key={i} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-lg hover:bg-white/[0.08] transition-colors group">
+                            <div className="flex-1 text-right">
+                              <span className="text-[11px] font-bold block truncate">{match.home}</span>
+                            </div>
+                            <div className="mx-6 flex flex-col items-center">
+                              <div className="bg-black/60 px-3 py-1 rounded border border-gold/20 text-gold font-mono font-bold text-sm shadow-[0_0_10px_rgba(197,160,89,0.1)]">
+                                {match.score}
+                              </div>
+                              {match.minute && (
+                                <span className="text-[8px] text-gold/80 italic mt-1 font-mono tracking-tighter">{match.minute}'</span>
+                              )}
+                            </div>
+                            <div className="flex-1 text-left">
+                              <span className="text-[11px] font-bold block truncate">{match.away}</span>
+                            </div>
+                            <div className="ml-4 w-16 text-right">
+                               <span className={`text-[8px] px-1.5 py-0.5 rounded-full uppercase tracking-tighter font-bold ${match.status === 'Live' ? 'bg-rose-500/10 text-rose-500 animate-pulse' : 'bg-slate-500/10 text-slate-500'}`}>
+                                 {match.status}
+                               </span>
+                            </div>
+                          </div>
+                        )) : (
+                          <p className="text-[10px] text-slate-500 text-center py-4 italic">No matches currently in flux.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {reservoirMatches.length > 0 && (
+                      <div className="pt-6 border-t border-white/5">
+                        <h4 className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-4 flex items-center gap-2">
+                          <span className="w-1 h-3 bg-slate-500"></span> Recently Archived (Reservoir)
+                        </h4>
+                        <div className="grid gap-2 opacity-60">
+                          {reservoirMatches.map((match, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-lg text-slate-400">
+                              <div className="flex-1 text-right text-[10px] truncate">{match.home}</div>
+                              <div className="mx-4 font-mono font-bold text-xs">{match.score}</div>
+                              <div className="flex-1 text-left text-[10px] truncate">{match.away}</div>
+                              <div className="text-[8px] ml-2 italic">{match.league}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              
+              <div className="p-4 bg-black/20 text-center">
+                <button 
+                  onClick={handleLiveClick}
+                  className="text-[10px] uppercase tracking-widest text-gold hover:underline"
+                >
+                  Refresh Data
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <footer className="max-w-7xl mx-auto px-8 py-8 border-t border-border-subtle flex items-center justify-between text-[9px] uppercase tracking-[0.2em] text-slate-600">
         <div>Real-time Web Synchronized Model v4.2</div>
