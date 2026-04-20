@@ -385,11 +385,11 @@ export default function App() {
                   <div className="bg-card-bg border border-border-subtle rounded-xl p-8">
                     <div className="flex justify-between items-center mb-8">
                       <h2 className="text-xs uppercase tracking-[0.25em] font-bold flex items-center gap-2">
-                        <span className="w-1 h-4 bg-gold"></span> AI Prediction Matrix
+                        <span className="w-1 h-4 bg-gold"></span> High-Accuracy Prediction Matrix
                       </h2>
                       <div className="bg-black/40 px-4 py-1.5 rounded-full border border-border-subtle flex items-center gap-3">
                         <div className="w-2 h-2 bg-gold rounded-full animate-pulse shadow-[0_0_8px_rgba(197,160,89,0.5)]"></div>
-                        <span className="text-[10px] uppercase font-bold tracking-widest text-gold">Stability Index: 96.4%</span>
+                        <span className="text-[10px] uppercase font-bold tracking-widest text-gold">Target Accuracy: 96%</span>
                       </div>
                     </div>
 
@@ -444,7 +444,7 @@ export default function App() {
                         icon={<Target size={18} />}
                       />
                       <PredictionCard 
-                        title="Draw Prob" 
+                        title="Draw Potential" 
                         value={`${result.predictions.draw_probability.probability}%`} 
                         confidence={result.predictions.draw_probability.probability}
                         reason={result.predictions.draw_probability.reason}
@@ -455,9 +455,9 @@ export default function App() {
 
                   <div className="bg-card-bg border border-border-subtle rounded-xl p-8">
                     <h3 className="text-[10px] uppercase tracking-[0.3em] font-bold mb-6 flex items-center gap-2">
-                       <span className="w-1 h-3 bg-gold"></span> Narrative Analysis
+                       <span className="w-1 h-3 bg-gold"></span> Historical & Synthetic Reasoning
                     </h3>
-                    <div className="prose prose-invert max-w-none text-slate-400 font-serif italic text-xl leading-relaxed opacity-80">
+                    <div className="prose prose-invert max-w-none text-slate-400 font-serif italic text-xl leading-relaxed opacity-80 border-l-2 border-gold/20 pl-6">
                       "{result.matchAnalysis}"
                     </div>
                   </div>

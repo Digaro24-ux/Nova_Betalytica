@@ -35,26 +35,29 @@ export interface PredictionResult {
 }
 
 export async function getFootballPrediction(homeTeam: string, awayTeam: string): Promise<PredictionResult> {
-  const prompt = `Perform an extremely detailed background check and predictive analysis for the football match between ${homeTeam} (Home) and ${awayTeam} (Away).
+  const prompt = `Perform an EXTREMELY intensive background check and predictive analysis for the football match between ${homeTeam} (Home) and ${awayTeam} (Away).
   
-  Use Google Search to find:
-  1. Past match records (Head-to-Head history).
-  2. Recent form (last 5-10 matches for each team).
-  3. Historical Goal averages and Goal range.
-  4. Historical Corner averages and Corner range.
-  5. Present team stats, injuries, and squad information.
+  CORE MISSION: Achieve a target accuracy/correctness level of 96% by cross-referencing massive amounts of historical data against present-day variables.
   
-  Provide predictions for:
-  - GG/NG (Both Teams to Score)
-  - 1X2 (Home Win, Draw, or Away Win)
-  - Over/Under 2.5 Goals
-  - Double Chance (1X, X2, 12)
-  - Home Team Over/Under Goals
-  - Away Team Over/Under Goals
-  - Corner Range (0-8, 9-11, 12+)
-  - Draw probability
+  SEARCH REQUIREMENTS (Use Google Search Tool):
+  1. Detailed Head-to-Head (H2H) history: Every meeting in the last 10 years. Extract W/D/L ratios, goal ranges, and corner trends.
+  2. Recent Form: Last 10 matches for each team. Note scoring consistency, defensive lapses, and corner production.
+  3. Contextual Data: Current injuries, starting XI predictions, tactical shifts, venue impact, and weather if applicable.
+  4. Specific Ranges: Extract historical "Goal Range" (e.g. 2-3 goals) and "Corner Range" (e.g. 9-11 corners) common for these teams.
   
-  Return the result in a structured JSON format with specific historical averages for chart visualization.`;
+  PREDICTION MATRIX (Required Options):
+  - GG/NG: Will both teams score?
+  - 1X2: Final outcome (1=Home, X=Draw, 2=Away).
+  - Over/Under 2.5: Total match goals.
+  - Double Chance: 1X, X2, or 12.
+  - Home Team O/U: Individual team goal prediction.
+  - Away Team O/U: Individual team goal prediction.
+  - Corner Range: Categorize as 0-8, 9-11, or 12+.
+  - Draw: Provide the explicit mathematical probability of a Draw (X).
+  
+  ANALYSIS: provide a deep "Narrative Analysis" that explains WHY the AI reached these conclusions based on the historical outliers found.
+  
+  Return the result in a structured JSON format. Ensure all numeric data for charts is mathematically consistent with the narrative.`;
 
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
